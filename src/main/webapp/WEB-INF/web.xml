@@ -21,13 +21,13 @@
     <welcome-file>index.jsp</welcome-file>
   </welcome-file-list>
 
-  <servlet>
+ <!--<servlet>
     <servlet-name>movieFun</servlet-name>
     <servlet-class>org.superbiz.moviefun.ActionServlet</servlet-class>
   </servlet>
   <servlet-mapping>
     <servlet-name>movieFun</servlet-name>
     <url-pattern>/moviefun/*</url-pattern>
-  </servlet-mapping>
+  </servlet-mapping>-->
 </web-app>
 
