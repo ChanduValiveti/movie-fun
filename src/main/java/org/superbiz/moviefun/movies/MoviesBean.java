@@ -29,15 +29,16 @@ import java.util.List;
 @Repository
 public class MoviesBean {
 
-    @PersistenceContext
+    @PersistenceContext(unitName = "persistence.movies")
     private EntityManager entityManager;
 
     public Movie find(Long id) {
         return entityManager.find(Movie.class, id);
     }
 
-    @Transactional
+
     public void addMovie(Movie movie) {
+
         entityManager.persist(movie);
     }
 
