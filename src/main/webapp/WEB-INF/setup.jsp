@@ -84,7 +84,7 @@
    </table>
 
   <h2>Continue</h2>
-  <a href="moviefun">Go to main app</a>
+  <a href="/moviefun">Go to main app</a>
 </div>
 <!-- /container -->
 </body>
