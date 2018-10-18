@@ -1,30 +1,39 @@
 package org.superbiz.moviefun.albums;
 
 import org.apache.tika.Tika;
+import org.apache.tika.io.IOUtils;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import org.superbiz.moviefun.blobstore.Blob;
+import org.superbiz.moviefun.blobstore.BlobStore;
+import org.superbiz.moviefun.blobstore.FileStore;
+import sun.nio.ch.IOUtil;
 
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Map;
+import java.util.Optional;
 
 import static java.lang.ClassLoader.getSystemResource;
 import static java.lang.String.format;
 import static java.nio.file.Files.readAllBytes;
+import static org.springframework.http.MediaType.IMAGE_JPEG_VALUE;
 
 @Controller
 @RequestMapping("/albums")
 public class AlbumsController {
 
     private final AlbumsBean albumsBean;
+    private FileStore fileStore = new FileStore();
 
     public AlbumsController(AlbumsBean albumsBean) {
         this.albumsBean = albumsBean;
@@ -45,19 +54,29 @@ public class AlbumsController {
 
     @PostMapping("/{albumId}/cover")
     public String uploadCover(@PathVariable long albumId, @RequestParam("file") MultipartFile uploadedFile) throws IOException {
-        saveUploadToFile(uploadedFile, getCoverFile(albumId));
-
+        if(uploadedFile.getSize() > 0) {
+            InputStream inputStream = uploadedFile.getInputStream();
+            Blob blob = new Blob("" + albumId, inputStream, uploadedFile.getContentType());
+            fileStore.put(blob);
+        }
         return format("redirect:/albums/%d", albumId);
     }
 
     @GetMapping("/{albumId}/cover")
     public HttpEntity<byte[]> getCover(@PathVariable long albumId) throws IOException, URISyntaxException {
-        Path coverFilePath = getExistingCoverPath(albumId);
-        byte[] imageBytes = readAllBytes(coverFilePath);
-        HttpHeaders headers = createImageHttpHeaders(coverFilePath, imageBytes);
+
+        Optional<Blob> optional = fileStore.get(""+albumId);
+        Blob blob = optional.isPresent()?optional.get():defaultCover();
+        byte[] imageBytes = IOUtils.toByteArray(blob.inputStream);
+
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.parseMediaType(blob.contentType));
+        headers.setContentLength(imageBytes.length);
 
         return new HttpEntity<>(imageBytes, headers);
     }
+
 
 
     private void saveUploadToFile(@RequestParam("file") MultipartFile uploadedFile, File targetFile) throws IOException {
@@ -95,5 +114,15 @@ public class AlbumsController {
         }
 
         return coverFilePath;
+    }
+
+    public Blob defaultCover()
+    {
+        ClassLoader classLoader = getClass().getClassLoader();
+
+        InputStream input = classLoader.getResourceAsStream("default-cover.jpg");
+
+        return new Blob("default-cover", input, IMAGE_JPEG_VALUE);
+
     }
 }
